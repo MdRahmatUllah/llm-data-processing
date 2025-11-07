@@ -1,0 +1,63 @@
+You are generating {{ n }} high-quality supervised fine-tuning (SFT) examples based on the following source material.
+
+**Source Context:**
+- Project: {{ project }}
+- File: {{ file_name }}
+- Chunk Index: {{ chunk_index }}
+- Chunk ID: {{ chunk_id }}
+
+**Source Text:**
+```
+{{ chunk_text }}
+```
+
+**Instructions:**
+
+1. Generate exactly {{ n }} diverse question-answer pairs based ONLY on the information in the text above.
+2. Do NOT introduce facts, concepts, or information not present in the source text.
+3. Each example must follow this structure:
+   - A user message containing a question, problem, or task request
+   - An assistant message containing the complete response with reasoning
+
+4. The assistant's response MUST include properly delimited sections:
+   - <|begin_of_thought|> ... <|end_of_thought|> wrapping the reasoning process
+   - <|begin_of_solution|> ... <|end_of_solution|> wrapping the final answer or solution
+   - If the answer is mathematical or has a definitive final value, wrap it in \boxed{...}
+   - Both opening and closing tags are REQUIRED for each section
+
+5. Return your response as a JSON array of objects with this exact schema:
+   ```json
+   [
+     {
+       "problem": "The user's question or task",
+       "solution": "The complete assistant response including <|begin_of_thought|> reasoning <|end_of_thought|> <|begin_of_solution|> final answer <|end_of_solution|>"
+     }
+   ]
+   ```
+
+6. **CRITICAL - JSON Escaping Rules:**
+   - Escape ALL backslashes as \\\\ (double backslash)
+   - Use only valid JSON escape sequences: \\", \\\\, \\/, \\n, \\r, \\t, \\b, \\f, \\uXXXX
+   - Never use invalid escapes like \\x, \\a, \\v, or single backslash before letters
+   - If your solution contains file paths like "C:\\Users", write them as "C:\\\\Users"
+   - If your solution contains LaTeX like "\\boxed{42}", write it as "\\\\boxed{42}"
+   - No trailing commas after the last item in arrays or objects
+
+7. Ensure variety in:
+   - Question types (factual, analytical, comparative, explanatory)
+   - Difficulty levels (simple recall to complex reasoning)
+   - Focus areas (different aspects of the source material)
+
+**Output Format:**
+Return ONLY the JSON array. Do not include markdown code fences, explanations, or any other text.
+
+**Example of Properly Escaped JSON:**
+```json
+[
+  {
+    "problem": "What is the file path?",
+    "solution": "<|begin_of_thought|>\\nThe path is C:\\\\Users\\\\Documents\\\\file.txt\\n<|end_of_thought|>\\n<|begin_of_solution|>\\nThe answer is \\\\boxed{C:\\\\Users\\\\Documents\\\\file.txt}\\n<|end_of_solution|>"
+  }
+]
+```
+

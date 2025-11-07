@@ -1,0 +1,61 @@
+Verify the following candidate SFT training item against the source material and quality criteria.
+
+**Candidate Item:**
+```json
+{{ candidate_json }}
+```
+
+**Source Context:**
+- Project: {{ chunk_meta.project }}
+- File: {{ chunk_meta.file_name }}
+- Chunk Index: {{ chunk_meta.chunk_index }}
+- Chunk ID: {{ chunk_meta.chunk_id }}
+
+**Source Text:**
+```
+{{ chunk_text }}
+```
+
+**Verification Criteria:**
+
+1. **Content Consistency:**
+   - All facts, concepts, and information in the problem and solution must be present in the source text
+   - No hallucinations or external knowledge introduced
+   - The question is answerable using only the source material
+
+2. **Structure Validation:**
+   - The solution contains properly paired <|begin_of_thought|> ... <|end_of_thought|> tags
+   - The solution contains properly paired <|begin_of_solution|> ... <|end_of_solution|> tags
+   - These tag pairs appear in the correct order (thought section before solution section)
+   - All opening tags have corresponding closing tags
+
+3. **Answer Format:**
+   - If the problem requires a mathematical or definitive answer, the solution must contain \boxed{...}
+   - The boxed answer (if present) is correct and matches the reasoning
+
+4. **Quality Standards:**
+   - The problem is clear and well-formed
+   - The solution demonstrates proper reasoning
+   - The reasoning is logical and follows from the source material
+   - The final answer is correct based on the source text
+
+**Your Task:**
+
+Evaluate the candidate item against ALL criteria above. Respond with a JSON object in this exact format:
+
+```json
+{
+  "passed": true or false,
+  "errors": ["list of specific error messages if failed, empty array if passed"],
+  "reasoning": "Brief explanation of your decision"
+}
+```
+
+**Important:**
+- Set "passed" to true ONLY if the item meets ALL criteria
+- If any criterion fails, set "passed" to false and list specific errors
+- Be strict but fair in your evaluation
+- Focus on factual accuracy and structural correctness
+
+Return ONLY the JSON object. Do not include markdown code fences or any other text.
+

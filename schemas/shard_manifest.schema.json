@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/shard_manifest.schema.json",
+  "title": "Shard Manifest",
+  "description": "Schema for the manifest file describing dataset shards",
+  "type": "object",
+  "required": [
+    "run_id",
+    "created_at",
+    "total_items",
+    "splits"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Unique identifier for this packing run",
+      "pattern": "^run_[0-9]{8}_[0-9]{6}$"
+    },
+    "created_at": {
+      "type": "string",
+      "description": "ISO 8601 timestamp when manifest was created",
+      "format": "date-time"
+    },
+    "total_items": {
+      "type": "integer",
+      "description": "Total number of items across all splits",
+      "minimum": 0
+    },
+    "splits": {
+      "type": "object",
+      "description": "Information about each data split",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "num_items",
+          "shards"
+        ],
+        "properties": {
+          "num_items": {
+            "type": "integer",
+            "description": "Number of items in this split",
+            "minimum": 0
+          },
+          "shards": {
+            "type": "array",
+            "description": "List of shard files in this split",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "file",
+                "num_items"
+              ],
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "description": "Filename of the shard",
+                  "minLength": 1
+                },
+                "num_items": {
+                  "type": "integer",
+                  "description": "Number of items in this shard",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "config": {
+      "type": "object",
+      "description": "Configuration used for this run",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
+

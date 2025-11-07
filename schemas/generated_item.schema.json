@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/generated_item.schema.json",
+  "title": "Generated Item",
+  "description": "Schema for a generated SFT training example",
+  "type": "object",
+  "required": [
+    "id",
+    "system_prompt",
+    "metadata",
+    "messages",
+    "problem",
+    "solution",
+    "created_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for this item (UUIDv4)",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "system_prompt": {
+      "type": "string",
+      "description": "System prompt used for generation",
+      "minLength": 1
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Metadata about the generated item",
+      "required": [
+        "source",
+        "difficulty",
+        "subject",
+        "tags"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Source of the data (e.g., 'synthetic', 'human')",
+          "minLength": 1
+        },
+        "difficulty": {
+          "type": "string",
+          "description": "Difficulty level of the problem",
+          "minLength": 1
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject area or topic",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "description": "List of tags for categorization",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "project": {
+          "type": "string",
+          "description": "Project name (if derived from chunk)"
+        },
+        "file_path": {
+          "type": "string",
+          "description": "Source file path (if derived from chunk)"
+        },
+        "file_name": {
+          "type": "string",
+          "description": "Source file name (if derived from chunk)"
+        },
+        "chunk_index": {
+          "type": "integer",
+          "description": "Chunk index (if derived from chunk)",
+          "minimum": 0
+        },
+        "chunk_id": {
+          "type": "string",
+          "description": "Chunk ID (if derived from chunk)",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": true
+    },
+    "messages": {
+      "type": "array",
+      "description": "Conversation messages (user and assistant)",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["role", "content"],
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "Role of the message sender",
+            "enum": ["system", "user", "assistant"]
+          },
+          "content": {
+            "type": "string",
+            "description": "Content of the message",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "problem": {
+      "type": "string",
+      "description": "The problem or question posed to the model",
+      "minLength": 1
+    },
+    "solution": {
+      "type": "string",
+      "description": "The solution or answer provided by the model",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "description": "ISO 8601 timestamp when item was created",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}
+

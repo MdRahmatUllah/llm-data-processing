@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/verify_report.schema.json",
+  "title": "Verification Report",
+  "description": "Schema for a verification report of a generated item",
+  "type": "object",
+  "required": [
+    "input_item_id",
+    "chunk_id",
+    "passed",
+    "errors",
+    "checks",
+    "created_at"
+  ],
+  "properties": {
+    "input_item_id": {
+      "type": "string",
+      "description": "ID of the item being verified (UUIDv4)",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "chunk_id": {
+      "type": "string",
+      "description": "ID of the source chunk",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "passed": {
+      "type": "boolean",
+      "description": "Whether the item passed all verification checks"
+    },
+    "errors": {
+      "type": "array",
+      "description": "List of error messages (empty if passed)",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "checks": {
+      "type": "object",
+      "description": "Individual check results",
+      "required": [
+        "json_schema_valid",
+        "messages_shape_valid"
+      ],
+      "properties": {
+        "json_schema_valid": {
+          "type": "boolean",
+          "description": "Whether the item passes JSON schema validation"
+        },
+        "messages_shape_valid": {
+          "type": "boolean",
+          "description": "Whether messages array has correct structure"
+        },
+        "content_consistent_with_chunk": {
+          "type": "boolean",
+          "description": "Whether content is consistent with source chunk"
+        },
+        "has_thought_token": {
+          "type": "boolean",
+          "description": "Whether solution contains <|begin_of_thought|> token"
+        },
+        "has_solution_token": {
+          "type": "boolean",
+          "description": "Whether solution contains <|begin_of_solution|> token"
+        },
+        "final_answer_boxed_if_required": {
+          "type": "boolean",
+          "description": "Whether final answer is in \\boxed{} if required"
+        }
+      },
+      "additionalProperties": true
+    },
+    "created_at": {
+      "type": "string",
+      "description": "ISO 8601 timestamp when report was created",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}
+

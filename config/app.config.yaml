@@ -1,0 +1,75 @@
+# Project metadata
+project_name: "SyntheticDataset"
+
+# Directory paths (relative to project root)
+input_root: "./input"
+workspace_root: "./workspace"
+output_root: "./output"
+
+# Chunking configuration
+chunking:
+  tokenizer: "cl100k-like"  # or "sentencepiece:model=./config/tokenizer.model"
+  max_tokens_per_chunk: 2048
+  overlap_tokens: 128
+  semantic_breaks:
+    enabled: true
+    prefer_headings: true
+    tolerance_pct: 10  # Allow 10% variance to hit semantic break
+
+# Generation configuration
+generation:
+  model_name: "gpt-oss:20b"  # Ollama model name (use 'ollama list' to see available models)
+  temperature: 0.7
+  max_tokens: 4096
+  system_prompt_file: "./config/prompts/sft_system.txt"
+  user_prompt_template: "./config/prompts/sft_user.jinja"
+  items_per_chunk: 2  # Generate 1-2 items per chunk
+
+# Verification configuration
+verification:
+  enabled: true
+  model_name: "qwen3:8b"  # Ollama model name for verification
+  temperature: 0.0  # Deterministic
+  max_tokens: 4000
+  system_prompt_file: "./config/prompts/sft_verifier_system.txt"
+  user_prompt_template: "./config/prompts/sft_verifier_user.jinja"
+  local_checks:
+    - json_schema
+    - messages_shape
+    - special_tokens
+    - boxed_answer
+
+# Packing configuration
+packing:
+  shuffle_seed: null  # null = use timestamp
+  splits:
+    train: 0.98
+    test: 0.02
+  shard_size: 5000  # Items per shard
+  output_format: "jsonl"
+  write_manifest: true
+
+# Metadata defaults
+metadata_defaults:
+  source: "synthetic"
+  difficulty: "medium"
+  subject: "general"
+  tags: []
+
+# Runtime configuration
+runtime:
+  max_requests_per_minute: 120  # Higher for local Ollama (no API quota limits)
+  max_tokens_per_minute: 200000  # Higher for local Ollama
+  parallel_chunks: 1  # Reduced to 1 to avoid overwhelming Ollama server
+  retry_max_attempts: 3
+  retry_backoff_base: 2  # Exponential backoff: 2^n seconds
+  timeout_seconds: 600  # 10 minutes - much longer timeout for local LLMs (20B model can be slow)
+
+# Audit configuration
+audit:
+  log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  log_dir: "./workspace/logs"
+  save_rejected_items: true
+  save_verification_reports: true
+  save_manifest: true  # Save manifest.json in output directory
+

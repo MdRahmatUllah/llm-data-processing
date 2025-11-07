@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/chunk.schema.json",
+  "title": "Chunk",
+  "description": "Schema for a text chunk extracted from a source document",
+  "type": "object",
+  "required": [
+    "chunk_id",
+    "project",
+    "file_path",
+    "file_name",
+    "chunk_index",
+    "total_chunks",
+    "token_start",
+    "token_end",
+    "text",
+    "metadata"
+  ],
+  "properties": {
+    "chunk_id": {
+      "type": "string",
+      "description": "Unique identifier for this chunk (SHA256 hash)",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "project": {
+      "type": "string",
+      "description": "Project name this chunk belongs to",
+      "minLength": 1
+    },
+    "file_path": {
+      "type": "string",
+      "description": "Relative path to the source file from project root",
+      "minLength": 1
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Name of the source file",
+      "minLength": 1
+    },
+    "chunk_index": {
+      "type": "integer",
+      "description": "Zero-based index of this chunk within the file",
+      "minimum": 0
+    },
+    "total_chunks": {
+      "type": "integer",
+      "description": "Total number of chunks in the source file",
+      "minimum": 1
+    },
+    "token_start": {
+      "type": "integer",
+      "description": "Starting token position in the original file",
+      "minimum": 0
+    },
+    "token_end": {
+      "type": "integer",
+      "description": "Ending token position in the original file (exclusive)",
+      "minimum": 0
+    },
+    "text": {
+      "type": "string",
+      "description": "The actual text content of this chunk",
+      "minLength": 1
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata about the chunk",
+      "required": [
+        "project_name",
+        "source_format",
+        "created_at"
+      ],
+      "properties": {
+        "project_name": {
+          "type": "string",
+          "description": "Human-readable project name",
+          "minLength": 1
+        },
+        "source_format": {
+          "type": "string",
+          "description": "Format of the source document",
+          "enum": ["markdown"]
+        },
+        "created_at": {
+          "type": "string",
+          "description": "ISO 8601 timestamp when chunk was created",
+          "format": "date-time"
+        },
+        "file_sha1": {
+          "type": "string",
+          "description": "SHA1 hash of the source file",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "tokenizer": {
+          "type": "string",
+          "description": "Tokenizer used for chunking"
+        },
+        "extra": {
+          "type": "object",
+          "description": "Additional custom metadata",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
+
