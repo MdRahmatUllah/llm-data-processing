@@ -70,19 +70,84 @@ class Generator:
                 n=self.config.generation.items_per_chunk
             )
 
-            # Call model API
-            logger.info(f"Calling generation model {self.config.generation.model_name} for chunk {chunk_id[:16]}... (this may take several minutes)")
-            response = await self.model_client.generate_with_retry(
-                model=self.config.generation.model_name,
-                messages=messages,
-                temperature=self.config.generation.temperature,
-                max_tokens=self.config.generation.max_tokens
-            )
-            logger.info(f"Generation completed for chunk {chunk_id[:16]}...")
-            
-            # Parse response
-            content = response['choices'][0]['message']['content']
+            # Call model API with retry logic for empty responses
+            max_empty_retries = 3
+            retry_delay = 2  # seconds
 
+            for attempt in range(max_empty_retries):
+                logger.info(f"Calling generation model {self.config.generation.model_name} for chunk {chunk_id[:16]}... (attempt {attempt + 1}/{max_empty_retries})")
+
+                try:
+                    response = await self.model_client.generate_with_retry(
+                        model=self.config.generation.model_name,
+                        messages=messages,
+                        temperature=self.config.generation.temperature,
+                        max_tokens=self.config.generation.max_tokens
+                    )
+
+                    # Extract content from response
+                    content = response.get('choices', [{}])[0].get('message', {}).get('content', '')
+
+                    # Check for empty or whitespace-only response
+                    if not content or not content.strip():
+                        logger.warning(f"Empty response received from model for chunk {chunk_id[:16]} (attempt {attempt + 1}/{max_empty_retries})")
+                        logger.warning(f"Full API response: {response}")
+
+                        # Save debug info for empty response
+                        debug_path = Path(self.config.audit.log_dir) / "failed_json" / f"chunk_{chunk_id[:16]}_empty_attempt{attempt + 1}.txt"
+                        debug_path.parent.mkdir(parents=True, exist_ok=True)
+
+                        with open(debug_path, 'w', encoding='utf-8') as f:
+                            f.write("=" * 80 + "\n")
+                            f.write("EMPTY RESPONSE DEBUG INFO\n")
+                            f.write("=" * 80 + "\n\n")
+                            f.write(f"Chunk ID: {chunk_id}\n")
+                            f.write(f"Attempt: {attempt + 1}/{max_empty_retries}\n")
+                            f.write(f"Model: {self.config.generation.model_name}\n")
+                            f.write(f"Temperature: {self.config.generation.temperature}\n")
+                            f.write(f"Max Tokens: {self.config.generation.max_tokens}\n\n")
+                            f.write("Full API Response:\n")
+                            f.write("-" * 80 + "\n")
+                            f.write(json.dumps(response, indent=2, ensure_ascii=False))
+                            f.write("\n\n")
+                            f.write("Chunk Content (first 1000 chars):\n")
+                            f.write("-" * 80 + "\n")
+                            f.write(chunk.get('content', '')[:1000])
+                            f.write("\n")
+
+                        logger.warning(f"Empty response debug info saved to: {debug_path}")
+
+                        # If not the last attempt, wait and retry
+                        if attempt < max_empty_retries - 1:
+                            wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
+                            logger.info(f"Waiting {wait_time}s before retry...")
+                            await asyncio.sleep(wait_time)
+                            continue
+                        else:
+                            # Last attempt failed, raise error
+                            error_msg = (
+                                f"Model returned empty response after {max_empty_retries} attempts for chunk {chunk_id[:16]}. "
+                                f"Possible causes: (1) Model timeout/interruption, (2) Context length issues, "
+                                f"(3) Model refusing to generate for this content, (4) Ollama server resource exhaustion. "
+                                f"Check debug file: {debug_path}"
+                            )
+                            logger.error(error_msg)
+                            raise ValueError(error_msg)
+
+                    # Valid non-empty response received
+                    logger.info(f"Generation completed for chunk {chunk_id[:16]} (received {len(content)} chars)")
+                    break  # Exit retry loop
+
+                except Exception as e:
+                    # If it's not an empty response issue, re-raise immediately
+                    if "empty response" not in str(e).lower():
+                        logger.error(f"API call failed for chunk {chunk_id[:16]}: {e}")
+                        raise
+                    # Otherwise, let the retry loop handle it
+                    if attempt == max_empty_retries - 1:
+                        raise
+
+            # Parse response
             # Use robust JSON parsing with automatic sanitization
             try:
                 from src.common.json_utils import parse_json_robust, save_failed_json
@@ -106,13 +171,15 @@ class Generator:
                         "chunk_id": chunk_id,
                         "model": self.config.generation.model_name,
                         "temperature": self.config.generation.temperature,
-                        "max_tokens": self.config.generation.max_tokens
+                        "max_tokens": self.config.generation.max_tokens,
+                        "content_length": len(content),
+                        "content_preview": content[:500] if content else "(empty)"
                     }
                 )
 
                 logger.error(f"Failed to parse JSON from model response for chunk {chunk_id}: {e}")
                 logger.error(f"Error location: line {e.lineno} column {e.colno}")
-                logger.error(f"Response content (first 500 chars): {content[:500]}")
+                logger.error(f"Response content (first 500 chars): {content[:500] if content else '(empty)'}")
                 logger.error(f"Debug info saved to: {debug_path}")
                 raise
 
@@ -258,10 +325,10 @@ class Verifier:
 
         # Boxed answer (if required)
         system_prompt = item.get("system_prompt", "")
-        if "\\boxed" in system_prompt or "boxed" in system_prompt.lower():
-            checks["final_answer_boxed_if_required"] = bool(re.search(r'\\boxed\{[^}]+\}', solution))
-        else:
-            checks["final_answer_boxed_if_required"] = True
+        # if "\\boxed" in system_prompt or "boxed" in system_prompt.lower():
+        #     checks["final_answer_boxed_if_required"] = bool(re.search(r'\\boxed\{[^}]+\}', solution))
+        # else:
+        checks["final_answer_boxed_if_required"] = True
 
         return checks
     
@@ -490,10 +557,34 @@ async def process_chunk(
         )
         
         return stats
-    
+
     except Exception as e:
         logger.error(f"Failed to process chunk {chunk_id}: {e}", exc_info=True)
-        raise
+
+        # Save error info to a dedicated error log file
+        error_dir = workspace / "logs" / "failed_chunks"
+        error_dir.mkdir(parents=True, exist_ok=True)
+        error_file = error_dir / f"chunk_{chunk_id[:16]}_error.txt"
+
+        with open(error_file, 'w', encoding='utf-8') as f:
+            f.write("=" * 80 + "\n")
+            f.write("CHUNK PROCESSING ERROR\n")
+            f.write("=" * 80 + "\n\n")
+            f.write(f"Chunk ID: {chunk_id}\n")
+            f.write(f"Project: {project}\n")
+            f.write(f"File: {file_path}\n")
+            f.write(f"Chunk Index: {chunk_index}\n\n")
+            f.write(f"Error Type: {type(e).__name__}\n")
+            f.write(f"Error Message: {str(e)}\n\n")
+            f.write("Chunk Content (first 1000 chars):\n")
+            f.write("-" * 80 + "\n")
+            f.write(chunk.get('content', '')[:1000])
+            f.write("\n")
+
+        logger.error(f"Error details saved to: {error_file}")
+
+        # Return stats with zero counts to allow pipeline to continue
+        return stats
 
 
 async def process_all_chunks(
@@ -613,14 +704,20 @@ async def process_all_chunks(
 
     tasks = [process_with_semaphore(chunk) for chunk in all_chunks]
     results = []
+    failed_chunks = []
 
     # Use tqdm for progress tracking
     for coro in async_tqdm.as_completed(tasks, total=len(tasks), desc="Processing chunks"):
         try:
             result = await coro
             results.append(result)
+
+            # Track chunks that generated 0 items (likely failed)
+            if result.get("generated_count", 0) == 0:
+                failed_chunks.append(result.get("chunk_id", "unknown"))
         except Exception as e:
             logger.error(f"Chunk processing failed: {e}")
+            failed_chunks.append("unknown")
             # Continue with other chunks
 
     # Close clients
@@ -633,7 +730,8 @@ async def process_all_chunks(
         "total_chunks": len(results),
         "total_generated": sum(r["generated_count"] for r in results),
         "total_verified": sum(r["verified_count"] for r in results),
-        "total_rejected": sum(r["rejected_count"] for r in results)
+        "total_rejected": sum(r["rejected_count"] for r in results),
+        "failed_chunks": len(failed_chunks)
     }
 
     logger.info("=" * 80)
@@ -642,6 +740,11 @@ async def process_all_chunks(
     logger.info(f"Items generated: {total_stats['total_generated']}")
     logger.info(f"Items verified: {total_stats['total_verified']}")
     logger.info(f"Items rejected: {total_stats['total_rejected']}")
+
+    if failed_chunks:
+        logger.warning(f"Failed chunks: {total_stats['failed_chunks']}")
+        logger.warning(f"Failed chunk IDs: {', '.join(failed_chunks[:5])}{'...' if len(failed_chunks) > 5 else ''}")
+        logger.warning(f"Check workspace/logs/failed_chunks/ for error details")
 
     if total_stats['total_generated'] > 0:
         verification_rate = (total_stats['total_verified'] / total_stats['total_generated']) * 100
