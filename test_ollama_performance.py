@@ -157,7 +157,7 @@ async def test_ollama_performance():
                 print("💡 Recommendations:")
                 if elapsed > 300:  # > 5 minutes
                     print("   ⚠️  Very slow performance detected!")
-                    print("   - Consider using a smaller model (e.g., qwen3:8b)")
+                    print("   - Consider using a smaller model (e.g., gpt-oss:20b)")
                     print("   - Or use GPU acceleration if available")
                     print("   - Recommended timeout: 900 seconds (15 minutes)")
                 elif elapsed > 180:  # > 3 minutes
@@ -183,7 +183,7 @@ async def test_ollama_performance():
         print("❌ CRITICAL: Even 10-minute timeout is insufficient!")
         print("   Recommendations:")
         print("   1. Increase timeout to 1200s (20 minutes) in config/app.config.yaml")
-        print("   2. Use a smaller model (e.g., qwen3:8b instead of gpt-oss:20b)")
+        print("   2. Use a smaller model (e.g., gpt-oss:20b instead of gpt-oss:20b)")
         print("   3. Check if Ollama has sufficient resources (CPU/RAM/GPU)")
         print("   4. Restart Ollama server")
     except Exception as e:

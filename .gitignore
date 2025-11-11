@@ -48,6 +48,7 @@ htmlcov/
 .dmypy.json
 dmypy.json
 .ruff_cache/
+workspace/ 
 
 # Environment variables
 .env

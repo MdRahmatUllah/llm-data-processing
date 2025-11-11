@@ -22,7 +22,6 @@ You are generating {{ n }} high-quality supervised fine-tuning (SFT) examples ba
 4. The assistant's response MUST include properly delimited sections:
    - <|begin_of_thought|> ... <|end_of_thought|> wrapping the reasoning process
    - <|begin_of_solution|> ... <|end_of_solution|> wrapping the final answer or solution
-   - If the answer is mathematical or has a definitive final value, wrap it in \boxed{...}
    - Both opening and closing tags are REQUIRED for each section
 
 5. Return your response as a JSON array of objects with this exact schema:
@@ -39,8 +38,6 @@ You are generating {{ n }} high-quality supervised fine-tuning (SFT) examples ba
    - Escape ALL backslashes as \\\\ (double backslash)
    - Use only valid JSON escape sequences: \\", \\\\, \\/, \\n, \\r, \\t, \\b, \\f, \\uXXXX
    - Never use invalid escapes like \\x, \\a, \\v, or single backslash before letters
-   - If your solution contains file paths like "C:\\Users", write them as "C:\\\\Users"
-   - If your solution contains LaTeX like "\\boxed{42}", write it as "\\\\boxed{42}"
    - No trailing commas after the last item in arrays or objects
 
 7. Ensure variety in:

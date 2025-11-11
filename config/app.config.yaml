@@ -9,7 +9,7 @@ output_root: "./output"
 # Chunking configuration
 chunking:
   tokenizer: "cl100k-like"  # or "sentencepiece:model=./config/tokenizer.model"
-  max_tokens_per_chunk: 2048
+  max_tokens_per_chunk: 4096
   overlap_tokens: 128
   semantic_breaks:
     enabled: true
@@ -28,16 +28,15 @@ generation:
 # Verification configuration
 verification:
   enabled: true
-  model_name: "qwen3:8b"  # Ollama model name for verification
+  model_name: "gpt-oss:20b"  # Ollama model name for verification
   temperature: 0.0  # Deterministic
-  max_tokens: 4000
+  max_tokens: 4096
   system_prompt_file: "./config/prompts/sft_verifier_system.txt"
   user_prompt_template: "./config/prompts/sft_verifier_user.jinja"
   local_checks:
     - json_schema
     - messages_shape
     - special_tokens
-    - boxed_answer
 
 # Packing configuration
 packing:
@@ -60,7 +59,7 @@ metadata_defaults:
 runtime:
   max_requests_per_minute: 120  # Higher for local Ollama (no API quota limits)
   max_tokens_per_minute: 200000  # Higher for local Ollama
-  parallel_chunks: 1  # Reduced to 1 to avoid overwhelming Ollama server
+  parallel_chunks: 2  # Reduced to 1 to avoid overwhelming Ollama server
   retry_max_attempts: 3
   retry_backoff_base: 2  # Exponential backoff: 2^n seconds
   timeout_seconds: 600  # 10 minutes - much longer timeout for local LLMs (20B model can be slow)

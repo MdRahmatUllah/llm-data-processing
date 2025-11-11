@@ -62,10 +62,6 @@
         "has_solution_token": {
           "type": "boolean",
           "description": "Whether solution contains <|begin_of_solution|> token"
-        },
-        "final_answer_boxed_if_required": {
-          "type": "boolean",
-          "description": "Whether final answer is in \\boxed{} if required"
         }
       },
       "additionalProperties": true

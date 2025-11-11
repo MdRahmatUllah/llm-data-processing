@@ -440,7 +440,6 @@ class Verifier:
                 "errors": errors + model_errors,
                 "checks": {
                     **checks,
-                    "content_consistent_with_chunk": model_passed
                 },
                 "created_at": datetime.utcnow().isoformat() + "Z"
             }
